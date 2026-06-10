@@ -1,0 +1,144 @@
+// SWE Interview Assistant — Prisma schema
+// See CLAUDE.md for the full data model rationale.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ── LeetCode ──────────────────────────────────────────────────────────────
+
+model LeetCodeProblem {
+  id          Int                  @id
+  slug        String               @unique
+  title       String
+  difficulty  String
+  tags        String
+  url         String
+  isPaid      Boolean              @default(false)
+  acRate      Float?
+  submissions LeetCodeSubmission[]
+}
+
+model LeetCodeSubmission {
+  id          String          @id @default(cuid())
+  problemId   Int
+  problem     LeetCodeProblem @relation(fields: [problemId], references: [id])
+  status      String
+  language    String
+  submittedAt DateTime
+
+  @@index([problemId, submittedAt])
+}
+
+model LeetCodeCredential {
+  id            Int       @id @default(1)
+  sessionCookie String
+  csrfToken     String
+  username      String?
+  lastSyncAt    DateTime?
+}
+
+// ── System Design ─────────────────────────────────────────────────────────
+
+model SystemDesignProblem {
+  id            String              @id @default(cuid())
+  slug          String              @unique
+  title         String
+  prompt        String
+  notes         String?
+  diagrams      Diagram[]
+  conversation  DesignConversation?
+  snapshots     DesignSnapshot[]
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+}
+
+model Diagram {
+  id        String              @id @default(cuid())
+  problemId String
+  problem   SystemDesignProblem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  label     String
+  sceneJson String
+  updatedAt DateTime            @updatedAt
+}
+
+// ── Behavioral ────────────────────────────────────────────────────────────
+
+model BehavioralCategory {
+  id        String               @id @default(cuid())
+  name      String               @unique
+  questions BehavioralQuestion[]
+}
+
+model BehavioralQuestion {
+  id         String             @id @default(cuid())
+  categoryId String
+  category   BehavioralCategory @relation(fields: [categoryId], references: [id])
+  text       String
+  isCommon   Boolean            @default(true)
+  answers    BehavioralAnswer[]
+}
+
+model BehavioralAnswer {
+  id         String             @id @default(cuid())
+  questionId String
+  question   BehavioralQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  projectTag String?
+  situation  String             @default("")
+  task       String             @default("")
+  action     String             @default("")
+  result     String             @default("")
+  updatedAt  DateTime           @updatedAt
+}
+
+// ── AI / Interviewer ──────────────────────────────────────────────────────
+
+model AICredential {
+  id        Int      @id @default(1)
+  provider  String   @default("anthropic")
+  apiKey    String
+  model     String   @default("claude-sonnet-4-6")
+  updatedAt DateTime @updatedAt
+}
+
+model DesignConversation {
+  id        String              @id @default(cuid())
+  problemId String              @unique
+  problem   SystemDesignProblem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  model     String
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+  messages  DesignMessage[]
+}
+
+model DesignMessage {
+  id             String             @id @default(cuid())
+  conversationId String
+  conversation   DesignConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role           String
+  content        String
+  diagramLabel   String?
+  createdAt      DateTime           @default(now())
+
+  @@index([conversationId, createdAt])
+}
+
+model DesignSnapshot {
+  id           String              @id @default(cuid())
+  problemId    String
+  problem      SystemDesignProblem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  name         String?
+  transcript   String
+  diagramPng   String?
+  diagramLabel String?
+  messageCount Int                 @default(0)
+  createdAt    DateTime            @default(now())
+
+  @@index([problemId, createdAt])
+}
