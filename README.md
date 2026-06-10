@@ -10,6 +10,8 @@ Backed by a focused **dashboard** that surfaces today's focus (one pick per modu
 
 Single-user, runs entirely on `localhost`. All data lives in a local SQLite file.
 
+![alt text](app/dashboard.png)
+
 ## Quick Start
 
 ```bash
